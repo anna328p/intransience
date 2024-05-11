@@ -7,24 +7,54 @@ let
             + (if a.write   then 2 else 0)
             + (if a.execute then 1 else 0));
 
+        cfgAll = cfg.all or {};
+
         sticky = if cfg.sticky then "1" else "0";
-        owner = rwxToChar (cfg.owner // cfg.all);
-        group = rwxToChar (cfg.group // cfg.all);
-        other = rwxToChar (cfg.other // cfg.all);
+        owner = rwxToChar (cfg.owner // cfgAll);
+        group = rwxToChar (cfg.group // cfgAll);
+        other = rwxToChar (cfg.other // cfgAll);
     in
         "${sticky}${owner}${group}${other}";
+
+    modeRE = "([01]?)([0-7])([0-7])([0-7])";
+
+    modeToFileAttrs = str: let
+		inherit (builtins) match elemAt map fromJSON;
+
+		numToAttrs = n: let
+			bitR = n / 4;
+			bitW = n / 2 - (bitR * 2);
+			bitX = n     - (bitR * 4) - (bitW * 2);
+		in {
+			read    = bitR == 1;
+			write   = bitW == 1;
+			execute = bitX == 1;
+		};
+
+    	modeParts = match modeRE str;
+    	modeInts = map fromJSON modeParts;
+    	part = elemAt modeInts;
+    in 
+    	assert modeParts != null;
+		{
+			sticky = (part 0) == 1;
+			all = {};
+			owner = numToAttrs (part 1);
+			group = numToAttrs (part 2);
+			other = numToAttrs (part 3);
+		};
 in {
     options.intransience = let
         inherit (lib)
             mkOption
             mkEnableOption
-            types
+            mkDefault
             ;
 
         t = lib.types;
 
         tFileMode = let
-            tModeString = t.strMatching "[01]?[0-7]{3}";
+            tModeString = t.strMatching modeRE;
 
             tModeAttrs = let
                 rwxOption = mkOption {
@@ -47,8 +77,6 @@ in {
                 };
 
                 config = let
-                    inherit (lib) mkDefault;
-
                     defaults = {
                         read = mkDefault config.all.read;
                         write = mkDefault config.all.write;
@@ -135,6 +163,20 @@ in {
                     type = t.uniq (t.enum [ "file" "dir" ]);
                 };
 
+				addExecute = mode: let
+					attrs = modeToFileAttrs mode;
+
+					overrideExec = set:
+						if set.read
+							then set // { execute = true; }
+							else set;
+				in
+					fileAttrsToMode {
+						inherit (attrs) sticky;
+						owner = overrideExec attrs.owner;
+						group = overrideExec attrs.group;
+						other = overrideExec attrs.other;
+					};
 
                 tEntryMod = {
                     basePath
@@ -147,7 +189,12 @@ in {
                         path = pathOption;
                         method = methodOption;
 
-                        parentDirectory = permissionOpts args;
+                        parentDirectory = let
+                        	args' = args // { mode = addExecute args.mode; };
+                        in
+                        	if kind == "file"
+                        		then permissionOpts args'
+                        		else permissionOpts args;
 
                         basePath = mkOption {
                             description = ''
