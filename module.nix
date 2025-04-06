@@ -1,4 +1,6 @@
-{ lib, config, localLib, ... }:
+{ localLib }:
+
+{ lib, config, ... }:
 
 {
 	##
@@ -10,7 +12,6 @@
 	# Implementation
 
     config = let
-
         inherit (lib)
             mkIf
             ;

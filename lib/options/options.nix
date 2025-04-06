@@ -80,14 +80,6 @@ in rec {
 		};
 
 		##
-		# kind : ModuleOption
-		kind = mkOption {
-			internal = true;
-			type = t.uniq (t.enum [ "file" "dir" ]);
-			description = desc.entry.kind;
-		};
-
-		##
 		# hideMount : ModuleOption
 		hideMount = mkOption {
 			type = t.bool;
@@ -117,20 +109,35 @@ in rec {
 		};
 
 		##
+		# kind : ModuleOption
+		kind.withDefault = default: mkOption {
+			type = t.uniq (t.enum [ "file" "dir" ]);
+			internal = true;
+
+			inherit default;
+
+			description = desc.entry.kind;
+		};
+
+
+		##
 		# path : ModuleOption
-		path = mkOption {
+		path.withDefault = default: mkOption {
 			type = t.uniq t.path;
 			internal = true;
+
+			inherit default;
 		};
 
 		##
 		# basePath : ModuleOption
-		basePath = mkOption {
+		basePath.withDefault = default: mkOption {
 			type = t.uniq t.path;
-			defaultText = "args.basePath";
-
 			internal = true;
 
+			inherit default;
+
+			defaultText = "args.basePath";
 			description = desc.entry.basePath;
 		};
 	};

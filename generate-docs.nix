@@ -1,11 +1,10 @@
-{ pkgs, lib, localLib, ... }:
+{ flakes, pkgs, lib, ... }:
 
 let
 	im = lib.evalModules {
 		modules = [
 			{ _module.check = false; }
-			{ _module.args = { inherit localLib; }; }
-			./module.nix
+			flakes.self.nixosModules.default
 		];
 	};
 

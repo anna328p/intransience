@@ -35,7 +35,10 @@ in rec {
 	}@args: let
 		permissionArgs = { inherit user group mode; };
 
-	in t.submodule ({ config, ... }: {
+	in t.submodule ({ config, ... }: let
+		fullPath   = toString (/. + (config.basePath + "/" + config.path));
+		sourcePath = toString (/. + (args.dsRootPath + "/" + config.fullPath));
+	in {
 		##
 		# Interface
 
@@ -43,11 +46,11 @@ in rec {
 			inherit (opts.entry)
 				path
 				method
-				kind
 				hideMount;
+
+			kind = opts.internal.kind.withDefault kind;
 			
-			inherit (opts.internal)
-				basePath;
+			basePath = opts.internal.basePath.withDefault basePath;
 
 			inherit (opts.mkPermissions permissionArgs)
 				user
@@ -56,20 +59,15 @@ in rec {
 
 			parentDirectory = opts.entry.parentDirectory.build kind permissionArgs;
 
-			fullPath   = opts.internal.path;
-			sourcePath = opts.internal.path;
+			fullPath   = opts.internal.path.withDefault fullPath;
+			sourcePath = opts.internal.path.withDefault sourcePath;
 		};
 
 		##
 		# Implementation
 
 		config = {
-			inherit (args) kind basePath;
-
 			hideMount = mkDefault args.hideBindMounts;
-
-			fullPath   = toString (/. + (config.basePath + "/" + config.path));
-			sourcePath = toString (/. + (args.dsRootPath + "/" + config.fullPath));
 		};
 	});
 
@@ -80,7 +78,10 @@ in rec {
 	  , group
 	  , mode
 	  , dsRootPath
-	}: t.submodule ({ config, ... }: {
+	}: t.submodule ({ config, ... }: let
+		fullPath   = toString (/etc + ("/" + config.path));
+		sourcePath = toString (/.   + (dsRootPath + "/" + config.fullPath));
+	in {
 		##
 		# Interface
 
@@ -88,28 +89,17 @@ in rec {
 			permissionArgs = { inherit user group mode; };
 		in {
 			inherit (opts.entry)
-				path
-				kind;
+				path;
 
 			inherit (opts.mkPermissions permissionArgs)
 				user
 				group
 				mode;
 
-			fullPath   = opts.internal.path;
+			kind = opts.internal.kind.withDefault kind;
 
-			sourcePath = opts.internal.path;
-		};
-
-		##
-		# Implementation
-
-		config = {
-			inherit kind;
-
-			fullPath   = toString (/etc + ("/" + config.path));
-
-			sourcePath = toString (/.   + (dsRootPath + "/" + config.fullPath));
+			fullPath   = opts.internal.path.withDefault fullPath;
+			sourcePath = opts.internal.path.withDefault sourcePath;
 		};
 	});
 
@@ -127,7 +117,6 @@ in rec {
 			# Entries
 
 			files = opts.ds.entries.build (file // forUser config);
-
 			dirs  = opts.ds.entries.build (dir  // forUser config);
 		};
 	});

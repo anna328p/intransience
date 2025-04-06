@@ -8,7 +8,7 @@
 		systems.url = "github:nix-systems/default";
 	};
 
-	outputs = { nixpkgs, systems, nix-prelude, ... }:
+	outputs = { self, nixpkgs, systems, nix-prelude, ... }@flakes:
 		let
 			eachSystem = nixpkgs.lib.genAttrs (import systems);
 
@@ -23,7 +23,13 @@
 			packages = eachSystem (system: let
 				pkgs = nixpkgs.legacyPackages.${system};
 			in {
-				docs = pkgs.callPackage ./generate-docs.nix { inherit localLib; };
+				docs = pkgs.callPackage ./generate-docs.nix { inherit flakes; };
+			});
+
+			checks = eachSystem (system: let
+				pkgs = nixpkgs.legacyPackages.${system};
+			in {
+				simple = pkgs.callPackage ./test/simple.nix { inherit flakes; };
 			});
 
 			nixosModules = rec {
