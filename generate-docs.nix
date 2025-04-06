@@ -1,10 +1,11 @@
-{ pkgs, lib, ... }:
+{ pkgs, lib, localLib, ... }:
 
 let
 	im = lib.evalModules {
 		modules = [
-			./default.nix
 			{ _module.check = false; }
+			{ _module.args = { inherit localLib; }; }
+			./module.nix
 		];
 	};
 
