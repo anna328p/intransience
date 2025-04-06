@@ -27,10 +27,6 @@
     in mkIf cfg.enable rec {
         fileSystems = collectBindMounts cfg.datastores;
 
-        virtualisation = mkIf (config.virtualisation ? fileSystems) {
-			inherit fileSystems;
-		};
-
         systemd.tmpfiles.settings = collectTmpfiles cfg.datastores;
 
         environment.etc = collectEtc cfg.datastores;
