@@ -26,6 +26,7 @@ in rec {
 		mountPoint = entry.fullPath;
 		device = entry.sourcePath;
 
+		fsType = "none";
 		options = [ "bind" "X-fstrim.notrim" ]
 			++ optional entry.hideMount "x-gvfs-hide";
 	};
